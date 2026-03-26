@@ -384,6 +384,10 @@ ai-memory release-check
 - [FAQ](docs/FAQ.md) - 常见问题
 - [排障指南](docs/TROUBLESHOOTING.md) - 问题排查
 
+## Codex MCP
+
+See [docs/CODEX_MCP.md](docs/CODEX_MCP.md) for Codex MCP setup and generated config examples.
+
 ## License
 
 Apache-2.0 License - 详见 [LICENSE](LICENSE)

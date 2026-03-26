@@ -19,6 +19,7 @@ import sys
 from ai_memory_hub.core.config import load_config
 from ai_memory_hub.extraction.quality import repair_data
 from ai_memory_hub.integrations.doctor import run_doctor
+from ai_memory_hub.integrations.client_config import build_mcp_client_config
 from ai_memory_hub.pipeline.growth import memory_growth
 from ai_memory_hub.services.manage import apply_feedback, batch_apply_feedback, list_memories
 from ai_memory_hub.integrations.mcp_server import mcp_runtime_status, run_handshake_self_check
@@ -79,6 +80,10 @@ def build_parser() -> argparse.ArgumentParser:
     install_tasks_parser = subparsers.add_parser("install-tasks")
     install_tasks_parser.add_argument("--interval-minutes", type=int, default=60)
     install_tasks_parser.add_argument("--task-name", default="AI Memory Pipeline")
+
+    mcp_config_parser = subparsers.add_parser("mcp-config")
+    mcp_config_parser.add_argument("--client", required=True, choices=["codex", "claude", "cursor"])
+    mcp_config_parser.add_argument("--server-name", default="ai-memory")
 
     # ── 数据导入导出 ──────────────────────────────────────────
     export_parser = subparsers.add_parser("export")
@@ -264,6 +269,8 @@ def main(argv: list[str] | None = None) -> int:
         mcp_main()
     elif args.command == "mcp-self-check":
         _print(run_handshake_self_check())
+    elif args.command == "mcp-config":
+        _print(build_mcp_client_config(client=args.client, server_name=args.server_name))
     elif args.command == "install-tasks":
         _print(install_pipeline_task(interval_minutes=args.interval_minutes, task_name=args.task_name))
 

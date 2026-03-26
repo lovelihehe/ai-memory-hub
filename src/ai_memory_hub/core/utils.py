@@ -62,12 +62,18 @@ def project_key_from_path(path: str | None) -> str | None:
     """
     从目录路径生成唯一的 project_key，格式为 `{slug}-{16位hash}`。
 
-    示例："/Users/me/my-project" -> "my-project-a1b2c3d4e5f6g7h8"
-    路径规范化：反斜杠转正斜杠、去除末尾斜杠、取最后一层目录名。
+    示例：
+      "/Users/me/my-project"  -> "my-project-a1b2c3d4e5f6g7h8"
+      "C:\\Users\\me\\my-project" -> "my-project-a1b2c3d4e5f6g7h8"
+      "~/my-project"           -> "my-project-a1b2c3d4e5f6g7h8"
+    路径规范化：~ 展开、反斜杠转正斜杠、去除末尾斜杠，取最后一层目录名。
     """
     if not path:
         return None
-    cleaned = path.replace("\\", "/").rstrip("/")
+    # 展开 ~ 为用户主目录
+    cleaned = str(Path(path).expanduser())
+    # 统一正斜杠
+    cleaned = cleaned.replace("\\", "/").rstrip("/")
     base = cleaned.split("/")[-1] or "project"
     return f"{slugify(base)}-{stable_id(cleaned)}"
 
@@ -83,7 +89,8 @@ def normalize_project_reference(value: str | None) -> str | None:
         return None
     if re.fullmatch(r"[a-z0-9-]+-[a-f0-9]{16}", value):
         return value
-    if any(token in value for token in ("\\", "/", ":")):
+    # 路径特征：包含分隔符或 ~ 前缀
+    if any(token in value for token in ("\\", "/", ":")) or value.startswith("~"):
         return project_key_from_path(value)
     return value
 

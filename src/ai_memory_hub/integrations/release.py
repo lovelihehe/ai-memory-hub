@@ -23,6 +23,7 @@ EXPECTED_CORE_COMMANDS = [
     "pipeline",
     "install-tasks",
     "run-mcp",
+    "mcp-config",
     "doctor",
     "repair-data",
     "stats",
@@ -59,7 +60,7 @@ DOC_SCAN_PATHS = [
 
 
 def run_release_check(*, root: Path | None = None) -> dict:
-    project_root = (root or Path(__file__).resolve().parents[2]).resolve()
+    project_root = (root or Path(__file__).resolve().parents[3]).resolve()
 
     checks = [
         _check_core_commands(project_root),
