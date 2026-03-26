@@ -171,14 +171,22 @@ ai-memory import --input ~/ai-memory-backup.zip
 
 ## 定时任务怎么配置
 
-```bash
-# Windows 任务计划程序（每小时跑一次 pipeline）
-ai-memory install-tasks --interval-minutes 60
+`install-tasks` 命令（仅 Windows）自动创建定时任务，定时调用 `scripts/run-pipeline.py` 执行完整流水线：
 
-# Linux/macOS 用 cron
-# crontab -e
-# 0 * * * * /path/to/.venv/bin/python /path/to/scripts/run-pipeline.py
+```bash
+# Windows：每小时自动跑 pipeline
+ai-memory install-tasks --interval-minutes 60
 ```
+
+Linux/macOS 需手动配置 cron 或 launchd：
+
+```bash
+# cron 示例（每小时执行一次）
+crontab -e
+# 添加：0 * * * * /path/to/.venv/bin/python /path/to/scripts/run-pipeline.py
+```
+
+> `scripts/run-pipeline.py` 由定时器自动调用，用户无需手动运行。
 
 ## MCP 服务器怎么配置
 
