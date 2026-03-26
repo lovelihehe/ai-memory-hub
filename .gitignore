@@ -1,0 +1,53 @@
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+build/
+dist/
+*.egg-info/
+
+*.db
+*.sqlite
+*.sqlite3
+
+ai-memory/
+.tmp-data/
+.tmp-home/
+.tmp-home-flags/
+.tmp-home-merge/
+.tmp-home*/
+Microsoft/
+pip/
+.codex/memories/
+.claude/skills/personal-memory/
+
+# Environment and secrets
+.env
+.env.local
+.env.*
+*.pem
+*.key
+credentials.json
+token.json
+
+# Logs
+*.log
+logs/
+
+# Terminal transcripts (may contain sensitive context)
+agent-transcripts/
+
+# Editor and IDE
+.cursor/
+.vscode/
+.idea/
+
+# Cache directories
+.cache/
