@@ -1,16 +1,13 @@
 #!/usr/bin/env python3
 """
-MCP 服务器启动脚本：跨平台运行 ai-memory run-mcp。
+Launch the AI Memory Hub MCP server.
 
-由 MCP 客户端（如 Claude Desktop、Cursor）通过 MCP 协议调用。
-自动检测 OS，找对应的 .venv Python，设置正确的环境变量，然后启动 MCP 服务器。
-
-使用方式（在 Claude Desktop 等 MCP 客户端的配置文件中引用）：
-    # Windows
-    "python.exe", "scripts\\run-mcp.py"
-    # Linux/macOS
-    "/path/to/.venv/bin/python", "scripts/run-mcp.py"
+This wrapper stays compatible with client configs that point to
+`scripts/run-mcp.py`, but avoids an extra spawned Python process when already
+running under the repo virtualenv. That makes stdio MCP handshakes reliable on
+Windows clients such as Codex.
 """
+
 from __future__ import annotations
 
 import os
@@ -22,19 +19,17 @@ REPO_ROOT = SCRIPT_DIR.parent
 
 
 def _venv_python() -> Path:
-    """返回当前 OS 对应的 .venv Python 可执行文件路径。"""
     if sys.platform == "win32":
         return REPO_ROOT / ".venv" / "Scripts" / "python.exe"
     return REPO_ROOT / ".venv" / "bin" / "python"
 
 
 def run_mcp() -> None:
-    """检测虚拟环境 → 设置环境变量 → 调用 ai-memory run-mcp。"""
     venv_python = _venv_python()
 
     if not venv_python.exists():
-        print(f"Error: Virtual environment not found at {REPO_ROOT / '.venv'}")
-        print("Please run: pip install -e .")
+        print(f"Error: Virtual environment not found at {REPO_ROOT / '.venv'}", file=sys.stderr)
+        print("Please run: pip install -e .", file=sys.stderr)
         sys.exit(1)
 
     env = os.environ.copy()
@@ -42,14 +37,23 @@ def run_mcp() -> None:
     env["PYTHONUTF8"] = "1"
     env.setdefault("AI_MEMORY_HOME", str(Path.home() / "ai-memory"))
     env.setdefault("AI_MEMORY_APP_HOME", str(REPO_ROOT))
+    os.environ.update(env)
 
-    result = os.spawnve(
-        os.P_WAIT,
-        str(venv_python),
-        [str(venv_python), "-m", "ai_memory_hub.cli", "run-mcp"],
-        env,
-    )
-    sys.exit(result)
+    current_python = Path(sys.executable).resolve()
+    if current_python != venv_python.resolve():
+        os.execve(
+            str(venv_python),
+            [str(venv_python), str(Path(__file__).resolve())],
+            env,
+        )
+
+    src_dir = REPO_ROOT / "src"
+    if str(src_dir) not in sys.path:
+        sys.path.insert(0, str(src_dir))
+
+    from ai_memory_hub.integrations.mcp_server import run_mcp as _run_mcp
+
+    _run_mcp()
 
 
 if __name__ == "__main__":

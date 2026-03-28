@@ -37,7 +37,7 @@ def build_mcp_client_config(
 ) -> dict[str, str]:
     repo_root = (repo_root or _repo_root()).resolve()
     command = str(_venv_python(repo_root))
-    script_arg = "scripts\\run-mcp.py" if sys.platform == "win32" else "scripts/run-mcp.py"
+    mcp_args = ["-m", "ai_memory_hub.cli", "run-mcp"]
     cwd = str(repo_root)
 
     if client == "codex":
@@ -45,7 +45,7 @@ def build_mcp_client_config(
             [
                 f"[mcp_servers.{server_name}]",
                 f"command = {_toml_literal(command)}",
-                f"args = [{_toml_literal(script_arg)}]",
+                "args = [" + ", ".join(_toml_literal(arg) for arg in mcp_args) + "]",
                 f"cwd = {_toml_literal(cwd)}",
             ]
         )
@@ -63,7 +63,7 @@ def build_mcp_client_config(
             '  "mcpServers": {',
             f'    "{server_name}": {{',
             f'      "command": {_json_string(command)},',
-            f'      "args": [{_json_string(script_arg)}],',
+            '      "args": [' + ", ".join(_json_string(arg) for arg in mcp_args) + "],",
             f'      "cwd": {_json_string(cwd)}',
             "    }",
             "  }",

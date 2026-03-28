@@ -34,11 +34,19 @@ from ai_memory_hub.integrations.scheduler import install_pipeline_task
 
 def _print(payload) -> None:
     """将数据序列化为格式化的 JSON 输出到 stdout。"""
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
     print(json.dumps(payload, ensure_ascii=False, indent=2))
 
 
 def _print_error(payload) -> None:
     """将错误信息序列化为格式化的 JSON 输出到 stderr。"""
+    try:
+        sys.stderr.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
     print(json.dumps(payload, ensure_ascii=False, indent=2), file=sys.stderr)
 
 

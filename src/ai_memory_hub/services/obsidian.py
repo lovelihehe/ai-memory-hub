@@ -9,6 +9,7 @@ Obsidian 同步模块。
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 from dataclasses import dataclass
@@ -258,7 +259,8 @@ def _collect_conversation_notes(config: MemoryConfig, store: MemoryStore) -> lis
 
 
 def _collect_rule_notes(config: MemoryConfig, store: MemoryStore) -> list[VaultNote]:
-    raw_notes: list[VaultNote] = []
+    # 第一步：按内容哈希去重，避免同一规则因标题差异被多次写入长期规则目录
+    content_key_to_record: dict[str, MemoryRecord] = {}
     for path in store.iter_memory_files():
         payload = json.loads(path.read_text(encoding="utf-8"))
         record = MemoryRecord.from_dict(payload)
@@ -270,6 +272,19 @@ def _collect_rule_notes(config: MemoryConfig, store: MemoryStore) -> list[VaultN
             continue
         if "needs-review" in record.tags:
             continue
+        content_key = hashlib.sha1(
+            f"{record.title}||{record.summary}||{record.details}".encode("utf-8")
+        ).hexdigest()[:24]
+        if content_key in content_key_to_record:
+            existing = content_key_to_record[content_key]
+            if record.created_at > existing.created_at:
+                content_key_to_record[content_key] = record
+        else:
+            content_key_to_record[content_key] = record
+
+    # 第二步：从去重后的记录生成 VaultNote，统一调用一次 grounded_title
+    raw_notes: list[VaultNote] = []
+    for record in content_key_to_record.values():
         note_type = "规则"
         title = grounded_title(
             title="长期规则标题",
@@ -297,6 +312,8 @@ def _collect_rule_notes(config: MemoryConfig, store: MemoryStore) -> list[VaultN
                 source_ref=record.id,
             )
         )
+
+    # 第三步：LLM 精选，控制输出数量
     keep_titles = grounded_keep_best(
         title="长期规则精选",
         candidates=[note.title for note in raw_notes],
