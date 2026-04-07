@@ -381,6 +381,7 @@ ai-memory release-check
 
 ## 文档
 
+- [架构设计](docs/ARCHITECTURE.md) - 系统架构、数据模型、存储方案、检索算法详解
 - [FAQ](docs/FAQ.md) - 常见问题
 - [排障指南](docs/TROUBLESHOOTING.md) - 问题排查
 

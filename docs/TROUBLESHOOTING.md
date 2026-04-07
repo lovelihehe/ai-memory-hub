@@ -1,5 +1,7 @@
 # 排障指南
 
+> 如需了解系统设计和数据模型的完整背景，请参阅 [ARCHITECTURE.md](./ARCHITECTURE.md)。
+
 ## 排查顺序
 
 先跑这三个命令：
@@ -228,6 +230,8 @@ ai-memory doctor
 建议值：本地模型 120 秒，云端 API 30-60 秒。
 
 ## 快速诊断
+
+> 关于架构设计的更多背景，参阅 [ARCHITECTURE.md](./ARCHITECTURE.md)。
 
 | 症状 | 命令 |
 |------|------|

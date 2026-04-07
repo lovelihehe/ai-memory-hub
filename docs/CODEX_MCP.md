@@ -1,5 +1,7 @@
 # Codex MCP Setup
 
+> 相关文档：[ARCHITECTURE.md](./ARCHITECTURE.md) | [FAQ.md](./FAQ.md) | [TROUBLESHOOTING.md](./TROUBLESHOOTING.md)
+
 This project now includes a dedicated CLI helper for Codex MCP setup:
 
 ```bash
