@@ -202,31 +202,83 @@ crontab -e
 
 **用户不需要手动运行它**——只需要在 MCP 客户端的配置文件中引用即可。
 
-### 配置步骤
+### 一键生成配置
 
-**第一步**：在 MCP 客户端的配置文件中引用脚本路径：
+系统提供 `mcp-config` 命令，自动检测仓库路径并生成对应客户端的配置片段：
 
-Claude Desktop（`%APPDATA%\Claude\claude_desktop_config.json`）：
+```bash
+# 生成 Codex（TOML）配置
+ai-memory mcp-config --client codex
+
+# 生成 Claude Desktop（JSON）配置
+ai-memory mcp-config --client claude
+
+# 生成 Cursor（JSON）配置
+ai-memory mcp-config --client cursor
+```
+
+命令优先使用仓库本地 `.venv` 中的 Python，不依赖系统全局 Python，建议先运行 `pip install -e .` 创建虚拟环境。
+
+### Codex 配置
+
+配置文件：`~/.codex/config.toml` 或项目级 `.codex/config.toml`
+
+```toml
+[mcp_servers.ai-memory]
+command = 'C:\\Users\\11818\\ai-memory-hub\\.venv\\Scripts\\python.exe'
+args = ['-m', 'ai_memory_hub.cli', 'run-mcp']
+cwd = 'C:\\Users\\11818\\ai-memory-hub'
+```
+
+运行 `ai-memory mcp-config --client codex` 可直接生成适用于当前机器的配置片段。
+
+### Claude Desktop 配置
+
+配置文件：`%APPDATA%\Claude\claude_desktop_config.json`
 
 ```json
 {
   "mcpServers": {
     "ai-memory": {
-      "command": "python",
-      "args": ["scripts\\run-mcp.py"],
-      "cwd": "C:\\path\\to\\ai-memory-hub"
+      "command": "C:\\Users\\11818\\ai-memory-hub\\.venv\\Scripts\\python.exe",
+      "args": ["-m", "ai_memory_hub.cli", "run-mcp"],
+      "cwd": "C:\\Users\\11818\\ai-memory-hub"
     }
   }
 }
 ```
 
-Cursor（`%APPDATA%\Cursor\User\globalStorage\saoudmeckami-mcp\settings.json`）配置方式相同。
+### Cursor 配置
 
-**第二步**：验证连接：
+配置文件：`%APPDATA%\Cursor\User\globalStorage\saoudmeckami-mcp\settings.json`
+
+配置格式与 Claude Desktop 完全相同：
+
+```json
+{
+  "mcpServers": {
+    "ai-memory": {
+      "command": "C:\\Users\\11818\\ai-memory-hub\\.venv\\Scripts\\python.exe",
+      "args": ["-m", "ai_memory_hub.cli", "run-mcp"],
+      "cwd": "C:\\Users\\11818\\ai-memory-hub"
+    }
+  }
+}
+```
+
+### 验证连接
+
+配置完成后，运行以下命令验证 MCP 连接是否正常：
 
 ```bash
 ai-memory mcp-self-check
 ```
+
+### Notes
+
+- `scripts/run-mcp.py` 是旧版运行时入口；当前优先使用 `ai-memory run-mcp`（即 `-m ai_memory_hub.cli run-mcp`），两者功能一致
+- `mcp-config` 命令只负责生成配置片段，不会修改任何文件
+- 如果 `.venv` 不存在，先运行 `pip install -e .` 创建虚拟环境
 
 ### CLI 和 MCP 的区别
 

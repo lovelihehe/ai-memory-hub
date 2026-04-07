@@ -709,8 +709,7 @@ ai-memory-hub/
 ├── tests/
 ├── docs/
 │   ├── FAQ.md
-│   ├── TROUBLESHOOTING.md
-│   └── CODEX_MCP.md
+│   └── TROUBLESHOOTING.md
 ├── pyproject.toml
 ├── README.md
 └── LICENSE
