@@ -17,6 +17,7 @@ from ai_memory_hub.extraction.extractors import consolidate
 from ai_memory_hub.services.obsidian import ensure_vault_layout, sync_obsidian_vault
 from ai_memory_hub.pipeline.bootstrap import bootstrap_known_projects
 from ai_memory_hub.services.render import render_outputs
+from ai_memory_hub.services.wiki import build_wiki
 from ai_memory_hub.extraction.sources import collect_sources
 from ai_memory_hub.storage.db import MemoryStore
 
@@ -51,12 +52,14 @@ def run_index(incremental: bool = True) -> dict[str, int | str]:
     store = MemoryStore(config)
     indexed = store.rebuild_memory_index(incremental=incremental)
     rendered = render_outputs(config, store)
+    wiki = build_wiki(config, store, incremental=True)
     obsidian = sync_obsidian_vault(config, store)
     return {
         "indexed_memories": indexed,
         "active_memories": store.count_memories(status="active"),
         "candidate_memories": store.count_memories(status="candidate"),
         **rendered,
+        **wiki,
         **obsidian,
     }
 

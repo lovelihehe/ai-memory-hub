@@ -28,6 +28,7 @@ from ai_memory_hub.pipeline.pipeline import init_environment, run_collect, run_c
 from ai_memory_hub.integrations.release import run_release_check
 from ai_memory_hub.services.search import memory_context, memory_search
 from ai_memory_hub.services.stats import memory_stats
+from ai_memory_hub.services.wiki import build_wiki, lint_wiki
 from ai_memory_hub.storage.db import MemoryStore
 from ai_memory_hub.integrations.scheduler import install_pipeline_task
 
@@ -76,6 +77,8 @@ def build_parser() -> argparse.ArgumentParser:
         "index",       # 重建检索索引
         "pipeline",    # 执行完整流水线
         "obsidian-sync",  # 同步到 Obsidian Vault
+        "wiki-build",  # 编译 wiki
+        "wiki-lint",  # 检查 wiki 健康度
         "run-mcp",     # 启动 MCP 服务器
         "mcp-self-check",  # MCP 握手自检
         "release-check",   # 发布前检查
@@ -195,6 +198,14 @@ def main(argv: list[str] | None = None) -> int:
         store = MemoryStore(config)
         ensure_vault_layout(config)
         _print(sync_obsidian_vault(config, store))
+    elif args.command == "wiki-build":
+        config = load_config()
+        store = MemoryStore(config)
+        _print(build_wiki(config, store, incremental=True))
+    elif args.command == "wiki-lint":
+        config = load_config()
+        store = MemoryStore(config)
+        _print(lint_wiki(config, store))
 
     # ── 检索 ─────────────────────────────────────────────────
     elif args.command == "search":
