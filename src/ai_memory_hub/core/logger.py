@@ -39,8 +39,11 @@ class Logger:
     def warning(self, message: str, **kwargs):
         self.logger.warning(message, extra=kwargs if kwargs else {})
 
-    def error(self, message: str, **kwargs):
-        self.logger.error(message, extra=kwargs if kwargs else {})
+    def error(self, message: str, exc_info: bool = False, **kwargs):
+        if exc_info:
+            self.logger.error(message, exc_info=True, extra=kwargs if kwargs else {})
+        else:
+            self.logger.error(message, extra=kwargs if kwargs else {})
 
     def debug(self, message: str, **kwargs):
         self.logger.debug(message, extra=kwargs if kwargs else {})

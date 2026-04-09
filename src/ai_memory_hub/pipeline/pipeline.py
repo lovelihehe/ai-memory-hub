@@ -20,6 +20,12 @@ from ai_memory_hub.services.render import render_outputs
 from ai_memory_hub.services.wiki import build_wiki
 from ai_memory_hub.extraction.sources import collect_sources
 from ai_memory_hub.storage.db import MemoryStore
+from ai_memory_hub.storage.dream_store import DreamStore
+from ai_memory_hub.services.dream import run_dream_generate
+from ai_memory_hub.services.brainstorming import run_brainstorming_sync
+from ai_memory_hub.extraction.skill_extractor import run_skill_extraction
+from ai_memory_hub.services.profile_service import get_profile_service
+from ai_memory_hub.services.usage_feedback import process_usage_feedback
 
 
 def init_environment() -> dict[str, str]:
@@ -75,13 +81,41 @@ def run_pipeline() -> dict[str, int | str]:
     consolidate_stats = consolidate(config, store)
     bootstrap_stats = bootstrap_known_projects(store)
     governance_stats = govern_candidates(store)
+
+    # 新增：技能抽取（阶段7）
+    skill_stats = {}
+    if config.learning.enabled:
+        skill_stats = run_skill_extraction(config)
+
     index_stats = run_index(incremental=False)
+
+    # Dream 生成 & Brainstorming 同步
+    dream_stats = run_dream_generate(config)
+    brainstorming_stats = run_brainstorming_sync(config)
+
+    # 新增：用户画像进化（阶段11）
+    profile_stats = {}
+    if config.learning.enabled:
+        profile_service = get_profile_service(config)
+        profile_service.record_session()
+        profile_stats = {"profile_session_recorded": True}
+
+    # 新增：使用反馈处理（阶段10）
+    feedback_stats = {}
+    if config.learning.enabled:
+        feedback_stats = process_usage_feedback(config)
+
     return {
         **collect_stats,
         **repair_stats,
         **consolidate_stats,
         **bootstrap_stats,
         **governance_stats,
+        **skill_stats,
         **index_stats,
         "expired_cleaned": expired_count,
+        **dream_stats,
+        **brainstorming_stats,
+        **profile_stats,
+        **feedback_stats,
     }

@@ -9,11 +9,14 @@
 from __future__ import annotations
 
 import json
+import logging
 import re
 import sqlite3
 
 from ai_memory_hub.storage.db import MemoryStore
 from ai_memory_hub.core.utils import normalize_project_reference
+
+logger = logging.getLogger(__name__)
 
 
 def _query_terms(query: str) -> list[str]:
@@ -128,7 +131,8 @@ def _fts_search(
             """
             try:
                 rows = conn.execute(sql, params + [fts_query, limit]).fetchall()
-            except sqlite3.Error:
+            except sqlite3.Error as e:
+                logger.warning(f"FTS search failed: {e}")
                 rows = []
 
         if not rows and normalized_query:
@@ -184,7 +188,8 @@ def _vector_search(
 
     try:
         results = vector_store.search_similar(query=query, limit=limit, filters=filters)
-    except Exception:
+    except Exception as e:
+        logger.warning(f"Vector search failed: {e}")
         return []
 
     if not results:
@@ -428,6 +433,7 @@ def memory_context(
     repo: str | None,
     task_type: str,
     query: str,
+    evolve_profile: bool = True,
 ) -> dict:
     normalized_project = normalize_project_reference(repo)
     matched = memory_search(
@@ -456,6 +462,10 @@ def memory_context(
     if all_ids:
         store.batch_update_access(all_ids)
 
+    # 用户画像自动进化
+    if evolve_profile:
+        _trigger_profile_evolution(tool, task_type, query, normalized_project)
+
     return {
         "must_follow": must_follow[:8],
         "preferences": preferences[:8],
@@ -463,3 +473,27 @@ def memory_context(
         "watch_outs": watch_outs[:8],
         "related_episodes": related_episodes[:8],
     }
+
+
+def _trigger_profile_evolution(
+    tool: str,
+    task_type: str,
+    query: str,
+    project: str | None,
+) -> None:
+    """在后台触发用户画像的辩证进化。"""
+    try:
+        from ai_memory_hub.core.config import load_config
+        from ai_memory_hub.services.profile_service import get_profile_service
+        config = load_config()
+        if not config.learning.enabled or not config.learning.profile_update_on_context:
+            return
+        profile_service = get_profile_service(config)
+        profile_service.record_context_use()
+        profile_service.record_tool_usage(tool)
+        if project:
+            profile_service._ensure_profile().add_project(project)
+        if task_type:
+            profile_service._ensure_profile().add_expertise(task_type)
+    except Exception:
+        pass

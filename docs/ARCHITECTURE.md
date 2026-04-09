@@ -674,40 +674,51 @@ ai-memory-hub/
 │   ├── __init__.py
 │   ├── cli.py                   # CLI 入口
 │   ├── core/
+│   │   ├── __init__.py         # 核心模块导出
 │   │   ├── config.py           # 配置管理
 │   │   ├── models.py           # 数据模型（MemoryRecord / RawEvent）
+│   │   ├── dream_models.py     # Dream 数据模型
 │   │   ├── logger.py           # 日志
 │   │   └── utils.py            # 工具函数（stable_id / trim_excerpt）
 │   ├── storage/
+│   │   ├── __init__.py         # 存储模块导出
 │   │   ├── db.py               # SQLite + FTS5 存储
+│   │   ├── dream_store.py      # Dream 持久化存储
 │   │   └── vector.py           # ChromaDB 向量存储
 │   ├── extraction/
+│   │   ├── __init__.py         # 抽取模块导出
 │   │   ├── sources.py          # 多工具数据源解析
-│   │   ├── extractors.py       # 记忆提炼（正则 + LLM）
+│   │   ├── extractors.py        # 记忆提炼（正则 + LLM）
 │   │   ├── quality.py          # 数据质量治理
 │   │   └── llm_analysis.py     # LLM 辅助分析
 │   ├── pipeline/
-│   │   ├── pipeline.py         # 流水线编排
+│   │   ├── __init__.py         # 流水线模块导出
+│   │   ├── pipeline.py         # 流水线编排（collect/consolidate/govern/grow）
 │   │   ├── bootstrap.py        # 项目引导
 │   │   └── growth.py           # 成长趋势分析
 │   ├── services/
-│   │   ├── search.py           # 混合搜索
-│   │   ├── manage.py           # 记忆管理
+│   │   ├── __init__.py         # 服务层导出
+│   │   ├── search.py           # 混合搜索（FTS5 + 向量）
+│   │   ├── manage.py           # 记忆管理（CRUD + 反馈）
 │   │   ├── obsidian.py         # Obsidian 同步
-│   │   ├── wiki.py            # Wiki 生成
-│   │   ├── stats.py           # 统计分析
-│   │   └── render.py          # Markdown 渲染
+│   │   ├── wiki.py             # Wiki 生成与检查
+│   │   ├── stats.py            # 统计分析
+│   │   ├── render.py           # Markdown 渲染
+│   │   ├── dream.py            # Dream 生成服务
+│   │   └── brainstorming.py     # Brainstorming 探索同步
 │   └── integrations/
+│       ├── __init__.py         # 集成模块导出
 │       ├── mcp_server.py        # MCP 服务器
-│       ├── client_config.py    # MCP 客户端配置生成
-│       ├── doctor.py           # 健康检查
-│       ├── scheduler.py        # 定时任务
-│       └── release.py          # 发布检查
+│       ├── client_config.py     # MCP 客户端配置生成
+│       ├── doctor.py            # 健康检查
+│       ├── scheduler.py         # 定时任务
+│       └── release.py           # 发布检查
 ├── scripts/
 │   ├── run-pipeline.py        # 流水线脚本入口
 │   └── run-mcp.py             # MCP 服务器脚本入口
 ├── tests/
 ├── docs/
+│   ├── ARCHITECTURE.md         # 架构文档
 │   ├── FAQ.md
 │   └── TROUBLESHOOTING.md
 ├── pyproject.toml

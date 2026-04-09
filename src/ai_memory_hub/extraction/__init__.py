@@ -25,6 +25,12 @@ from ai_memory_hub.extraction.llm_analysis import (
     load_llm_settings,
 )
 
+from ai_memory_hub.extraction.skill_extractor import (
+    run_skill_extraction,
+    extract_skill_from_events,
+    check_skill_extraction_trigger,
+)
+
 __all__ = [
     "SourceSpec",
     "ToolAdapter",
@@ -42,4 +48,8 @@ __all__ = [
     "grounded_route_decision",
     "grounded_title",
     "load_llm_settings",
+    # skill
+    "run_skill_extraction",
+    "extract_skill_from_events",
+    "check_skill_extraction_trigger",
 ]

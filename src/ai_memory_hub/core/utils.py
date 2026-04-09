@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 通用工具函数：ID 生成、文本规范、乱码检测、文件路径处理。
 """
@@ -6,8 +5,15 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import re
+from datetime import datetime, timezone
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ai_memory_hub.core.models import MemoryRecord
+    from ai_memory_hub.storage.db import MemoryStore
 
 # GBK→UTF-8 双重编码乱码特征字符（用于 contains_mojibake 检测）
 # 常见中文关键词被错误编码后出现的高频乱码片段
@@ -129,3 +135,93 @@ def contains_mojibake(text: str | None) -> bool:
 def ensure_parent(path: Path) -> None:
     """确保文件路径的父目录存在（如不存在则递归创建）。"""
     path.parent.mkdir(parents=True, exist_ok=True)
+
+
+def parse_timestamp(value: str | None) -> datetime | None:
+    """
+    将 ISO 格式时间戳字符串解析为 datetime 对象。
+
+    处理多种格式：
+    - 带 Z 后缀: "2024-01-15T10:30:00Z"
+    - 带时区偏移: "2024-01-15T10:30:00+00:00"
+    - 无时区: "2024-01-15T10:30:00"
+    """
+    if not value:
+        return None
+    value = str(value).replace("Z", "+00:00")
+    try:
+        return datetime.fromisoformat(value)
+    except ValueError:
+        return None
+
+
+def time_ago(value: str | None) -> str:
+    """
+    将时间戳转换为中文相对时间描述。
+
+    示例：2024-01-15T10:30:00+00:00 -> "3天前"
+    """
+    ts = value
+    if not ts:
+        return "未知"
+    dt = parse_timestamp(ts)
+    if dt is None:
+        return "未知"
+    now = datetime.now(timezone.utc)
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    days = (now - dt).days
+    if days == 0:
+        return "今天"
+    elif days == 1:
+        return "1天前"
+    return f"{days}天前"
+
+
+def load_records(
+    store: MemoryStore,
+    *,
+    exclude_statuses: set[str] | None = None,
+) -> list[MemoryRecord]:
+    """
+    从 store 加载记忆记录，支持按状态过滤。
+
+    与 _load_active_records 和 _load_records 的区别：
+    - 统一的接口，支持任意状态过滤
+    - 自动跳过解析失败的记录
+    """
+    from ai_memory_hub.core.models import MemoryRecord
+
+    exclude_statuses = exclude_statuses or set()
+    records: list[MemoryRecord] = []
+    for path in store.iter_memory_files():
+        try:
+            record = MemoryRecord.from_dict(json.loads(path.read_text(encoding="utf-8")))
+            if record.status in exclude_statuses:
+                continue
+            records.append(record)
+        except Exception:
+            continue
+    return records
+
+
+def load_records_with_mtime(store: MemoryStore) -> list[tuple[MemoryRecord, Path, int]]:
+    """
+    从 store 加载记忆记录及其文件路径和修改时间。
+
+    返回: list of (record, path, mtime_ns)
+    """
+    from ai_memory_hub.core.models import MemoryRecord
+
+    result: list[tuple[MemoryRecord, Path, int]] = []
+    for path in store.iter_memory_files():
+        try:
+            record = MemoryRecord.from_dict(json.loads(path.read_text(encoding="utf-8")))
+        except Exception:
+            continue
+        try:
+            mtime_ns = path.stat().st_mtime_ns
+        except OSError:
+            mtime_ns = 0
+        result.append((record, path, mtime_ns))
+    return result

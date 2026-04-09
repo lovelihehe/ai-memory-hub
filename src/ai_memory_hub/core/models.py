@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Self
 
 
 def utc_now() -> str:
@@ -16,6 +16,25 @@ class Evidence:
     session_id: str | None
     timestamp: str | None
     excerpt: str
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+    @staticmethod
+    def from_dict(payload: dict[str, Any]) -> Self:
+        if not isinstance(payload, dict):
+            raise TypeError(f"Evidence.from_dict expects a dict, got {type(payload).__name__}")
+        required_fields = ["source_tool", "source_path", "excerpt"]
+        missing = [f for f in required_fields if f not in payload]
+        if missing:
+            raise KeyError(f"Evidence.from_dict missing required fields: {missing}")
+        return Evidence(
+            source_tool=payload["source_tool"],
+            source_path=payload["source_path"],
+            session_id=payload.get("session_id"),
+            timestamp=payload.get("timestamp"),
+            excerpt=payload["excerpt"],
+        )
 
 
 @dataclass(slots=True)
@@ -50,6 +69,30 @@ class MemoryRecord:
 
     @staticmethod
     def from_dict(payload: dict[str, Any]) -> "MemoryRecord":
+        if not isinstance(payload, dict):
+            raise TypeError(f"MemoryRecord.from_dict expects a dict, got {type(payload).__name__}")
+        # 必填字段验证
+        required_fields = ["id", "title", "memory_type", "scope", "tool", "summary", "details", "confidence", "stability", "sensitivity", "created_at", "status"]
+        missing = [f for f in required_fields if f not in payload]
+        if missing:
+            raise KeyError(f"MemoryRecord.from_dict missing required fields: {missing}")
+        # 数值类型验证
+        try:
+            confidence = float(payload["confidence"])
+            if not 0.0 <= confidence <= 1.0:
+                raise ValueError(f"confidence must be between 0.0 and 1.0, got {confidence}")
+        except (TypeError, ValueError) as e:
+            raise ValueError(f"Invalid confidence value: {payload.get('confidence')}") from e
+        try:
+            stability = float(payload["stability"])
+            if not 0.0 <= stability <= 1.0:
+                raise ValueError(f"stability must be between 0.0 and 1.0, got {stability}")
+        except (TypeError, ValueError) as e:
+            raise ValueError(f"Invalid stability value: {payload.get('stability')}") from e
+        # evidence 格式验证
+        evidence_data = payload.get("evidence", [])
+        if not isinstance(evidence_data, list):
+            raise TypeError(f"evidence must be a list, got {type(evidence_data).__name__}")
         return MemoryRecord(
             id=payload["id"],
             title=payload["title"],
@@ -59,9 +102,9 @@ class MemoryRecord:
             project_key=payload.get("project_key"),
             summary=payload["summary"],
             details=payload["details"],
-            evidence=[Evidence(**item) for item in payload.get("evidence", [])],
-            confidence=float(payload["confidence"]),
-            stability=float(payload["stability"]),
+            evidence=[Evidence(**item) for item in evidence_data],
+            confidence=confidence,
+            stability=stability,
             sensitivity=payload["sensitivity"],
             tags=list(payload.get("tags", [])),
             created_at=payload["created_at"],
@@ -90,3 +133,29 @@ class RawEvent:
     text: str | None
     command: str | None
     raw_json: str
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+    @staticmethod
+    def from_dict(payload: dict[str, Any]) -> Self:
+        if not isinstance(payload, dict):
+            raise TypeError(f"RawEvent.from_dict expects a dict, got {type(payload).__name__}")
+        required_fields = ["id", "source_tool", "source_path", "event_type", "raw_json"]
+        missing = [f for f in required_fields if f not in payload]
+        if missing:
+            raise KeyError(f"RawEvent.from_dict missing required fields: {missing}")
+        return RawEvent(
+            id=payload["id"],
+            source_tool=payload["source_tool"],
+            source_path=payload["source_path"],
+            session_id=payload.get("session_id"),
+            event_type=payload["event_type"],
+            timestamp=payload.get("timestamp"),
+            role=payload.get("role"),
+            cwd=payload.get("cwd"),
+            project_key=payload.get("project_key"),
+            text=payload.get("text"),
+            command=payload.get("command"),
+            raw_json=payload["raw_json"],
+        )

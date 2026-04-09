@@ -124,8 +124,9 @@ def batch_apply_feedback(
 
     applied = 0
     failed = 0
-    for candidate in candidates:
-        result = apply_feedback(store, memory_id=candidate["id"], action=action)
+    total = len(candidates)
+    for i, candidate in enumerate(candidates):
+        result = apply_feedback(store, memory_id=candidate["id"], action=action, rebuild_index=(i == total - 1))
         if result.get("ok"):
             applied += 1
         else:
@@ -140,7 +141,7 @@ def batch_apply_feedback(
     }
 
 
-def apply_feedback(store: MemoryStore, *, memory_id: str, action: str, target_id: str | None = None) -> dict:
+def apply_feedback(store: MemoryStore, *, memory_id: str, action: str, target_id: str | None = None, rebuild_index: bool = True) -> dict:
     record = store.load_memory(memory_id)
     if not record:
         return {"ok": False, "message": f"Memory not found: {memory_id}"}
@@ -171,7 +172,8 @@ def apply_feedback(store: MemoryStore, *, memory_id: str, action: str, target_id
     record.manual_override = True
     record.reviewed_at = utc_now()
     store.write_memory(record)
-    store.rebuild_memory_index()
+    if rebuild_index:
+        store.rebuild_memory_index()
     return {
         "ok": True,
         "memory_id": memory_id,

@@ -9,27 +9,13 @@
 
 from __future__ import annotations
 
-import json
 import shutil
 from pathlib import Path
 
 from ai_memory_hub.core.config import MemoryConfig, ToolConfig, ToolRenderTarget
 from ai_memory_hub.core.models import MemoryRecord
 from ai_memory_hub.storage.db import MemoryStore
-from ai_memory_hub.core.utils import ensure_parent
-
-
-def _load_records(store: MemoryStore, exclude_contradicted: bool = True) -> list[MemoryRecord]:
-    records: list[MemoryRecord] = []
-    for path in store.iter_memory_files():
-        try:
-            record = MemoryRecord.from_dict(json.loads(path.read_text(encoding="utf-8")))
-            if exclude_contradicted and record.status == "contradicted":
-                continue
-            records.append(record)
-        except Exception:
-            continue
-    return records
+from ai_memory_hub.core.utils import ensure_parent, load_records, time_ago
 
 
 def _bullet_lines(records: list[MemoryRecord], max_items: int) -> list[str]:
@@ -37,7 +23,7 @@ def _bullet_lines(records: list[MemoryRecord], max_items: int) -> list[str]:
     for record in sorted(records, key=lambda item: (-item.confidence, -item.stability, item.title))[:max_items]:
         stars = _confidence_stars(record.confidence)
         last_source = _last_source_tool(record)
-        last_days = _last_seen_days(record)
+        last_days = time_ago(record.last_seen_at or record.reviewed_at or record.created_at)
         if record.status == "contradicted":
             lines.append(
                 f"- ~~[{stars}] ~~{record.title}~~~~  (已矛盾，{last_source} · {last_days})"
@@ -64,22 +50,6 @@ def _last_source_tool(record: MemoryRecord) -> str:
     if record.evidence:
         return record.evidence[-1].source_tool.title()
     return "Unknown"
-
-
-def _last_seen_days(record: MemoryRecord) -> str:
-    from datetime import datetime, timezone
-    ts = record.last_seen_at or record.reviewed_at or record.created_at
-    ts = str(ts).replace("Z", "+00:00")
-    try:
-        dt = datetime.fromisoformat(ts)
-        days = (datetime.now(timezone.utc) - dt).days
-        if days == 0:
-            return "今天"
-        elif days == 1:
-            return "1天前"
-        return f"{days}天前"
-    except Exception:
-        return "未知"
 
 
 def _render_markdown(path: Path, title: str, sections: list[tuple[str, list[str]]]) -> None:
@@ -121,7 +91,7 @@ def _project_sections(project_records: list[MemoryRecord], max_items: int) -> li
 
 
 def render_outputs(config: MemoryConfig, store: MemoryStore) -> dict[str, int]:
-    records = [item for item in _load_records(store) if item.status == "active"]
+    records = [item for item in load_records(store, exclude_statuses={"contradicted"}) if item.status == "active"]
     rendered_root = config.data_home_path / "rendered"
     max_items = config.scan.max_render_items
 
